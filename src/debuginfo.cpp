@@ -251,7 +251,7 @@ public:
     virtual void NotifyFunctionEmitted(const Function &F, void *Code,
                                        size_t Size, const EmittedFunctionDetails &Details)
     {
-        jl_tls_states_t *ptls = jl_get_ptls_states();
+        jl_ptls_t ptls = jl_get_ptls_states();
         // This function modify linfo->fptr in GC safe region.
         // This should be fine since the GC won't scan this field.
         int8_t gc_state = jl_gc_safe_enter(ptls);
@@ -310,7 +310,7 @@ public:
     virtual void NotifyObjectEmitted(const ObjectImage &obj)
 #endif
     {
-        jl_tls_states_t *ptls = jl_get_ptls_states();
+        jl_ptls_t ptls = jl_get_ptls_states();
         // This function modify linfo->fptr in GC safe region.
         // This should be fine since the GC won't scan this field.
         int8_t gc_state = jl_gc_safe_enter(ptls);
@@ -1187,7 +1187,7 @@ int jl_DI_for_fptr(uint64_t fptr, uint64_t *symsize, int64_t *slide, int64_t *se
 extern "C"
 JL_DLLEXPORT jl_value_t *jl_get_dobj_data(uint64_t fptr)
 {
-    jl_tls_states_t *ptls = jl_get_ptls_states();
+    jl_ptls_t ptls = jl_get_ptls_states();
     // Used by Gallium.jl
     const object::ObjectFile *object = NULL;
     DIContext *context;
@@ -1209,7 +1209,7 @@ JL_DLLEXPORT jl_value_t *jl_get_dobj_data(uint64_t fptr)
 extern "C"
 JL_DLLEXPORT uint64_t jl_get_section_start(uint64_t fptr)
 {
-    jl_tls_states_t *ptls = jl_get_ptls_states();
+    jl_ptls_t ptls = jl_get_ptls_states();
     // Used by Gallium.jl
     int8_t gc_state = jl_gc_safe_enter(ptls);
     std::map<size_t, ObjectInfo, revcomp> &objmap = jl_jit_events->getObjectMap();
