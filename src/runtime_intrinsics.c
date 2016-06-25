@@ -306,7 +306,8 @@ jl_value_t *jl_iintrinsic_1(jl_value_t *ty, jl_value_t *a, const char *name,
 
 static inline jl_value_t *jl_intrinsiclambda_ty1(jl_value_t *ty, void *pa, unsigned osize, unsigned osize2, const void *voidlist)
 {
-    jl_value_t *newv = newstruct((jl_datatype_t*)ty);
+    jl_ptls_t ptls = jl_get_ptls_states();
+    jl_value_t *newv = newstruct(ptls, (jl_datatype_t*)ty);
     intrinsic_1_t op = select_intrinsic_1(osize2, (const intrinsic_1_t*)voidlist);
     op(osize * host_char_bit, pa, jl_data_ptr(newv));
     return newv;
@@ -314,7 +315,8 @@ static inline jl_value_t *jl_intrinsiclambda_ty1(jl_value_t *ty, void *pa, unsig
 
 static inline jl_value_t *jl_intrinsiclambda_u1(jl_value_t *ty, void *pa, unsigned osize, unsigned osize2, const void *voidlist)
 {
-    jl_value_t *newv = newstruct((jl_datatype_t*)ty);
+    jl_ptls_t ptls = jl_get_ptls_states();
+    jl_value_t *newv = newstruct(ptls, (jl_datatype_t*)ty);
     intrinsic_u1_t op = select_intrinsic_u1(osize2, (const intrinsic_u1_t*)voidlist);
     unsigned cnt = op(osize * host_char_bit, pa);
     // TODO: the following memset/memcpy assumes little-endian
@@ -342,6 +344,7 @@ JL_DLLEXPORT jl_value_t *jl_##name(jl_value_t *ty, jl_value_t *a) \
 
 static inline jl_value_t *jl_intrinsic_cvt(jl_value_t *ty, jl_value_t *a, const char *name, intrinsic_cvt_t op, intrinsic_cvt_check_t check_op)
 {
+    jl_ptls_t ptls = jl_get_ptls_states();
     jl_value_t *aty = jl_typeof(a);
     if (!jl_is_bitstype(aty))
         jl_errorf("%s: value is not a bitstype", name);
@@ -352,7 +355,7 @@ static inline jl_value_t *jl_intrinsic_cvt(jl_value_t *ty, jl_value_t *a, const 
     unsigned osize = jl_datatype_size(ty);
     if (check_op && check_op(isize, osize, pa))
         jl_throw(jl_inexact_exception);
-    jl_value_t *newv = newstruct((jl_datatype_t*)ty);
+    jl_value_t *newv = newstruct(ptls, (jl_datatype_t*)ty);
     op(aty == (jl_value_t*)jl_bool_type ? 1 : isize * host_char_bit, pa,
             osize * host_char_bit, jl_data_ptr(newv));
     if (ty == (jl_value_t*)jl_bool_type)
@@ -381,11 +384,12 @@ typedef void (fintrinsic_op1)(unsigned, void*, void*);
 
 static inline jl_value_t *jl_fintrinsic_1(jl_value_t *ty, jl_value_t *a, const char *name, fintrinsic_op1 *floatop, fintrinsic_op1 *doubleop)
 {
+    jl_ptls_t ptls = jl_get_ptls_states();
     if (!jl_is_bitstype(jl_typeof(a)))
         jl_errorf("%s: value is not a bitstype", name);
     if (!jl_is_bitstype(ty))
         jl_errorf("%s: type is not a bitstype", name);
-    jl_value_t *newv = newstruct((jl_datatype_t*)ty);
+    jl_value_t *newv = newstruct(ptls, (jl_datatype_t*)ty);
     void *pa = jl_data_ptr(a), *pr = jl_data_ptr(newv);
     unsigned sz = jl_datatype_size(jl_typeof(a));
     unsigned sz2 = jl_datatype_size(ty);
@@ -517,7 +521,8 @@ jl_value_t *jl_iintrinsic_2(jl_value_t *a, jl_value_t *b, const char *name,
 
 static inline jl_value_t *jl_intrinsiclambda_2(jl_value_t *ty, void *pa, void *pb, unsigned sz, unsigned sz2, const void *voidlist)
 {
-    jl_value_t *newv = newstruct((jl_datatype_t*)ty);
+    jl_ptls_t ptls = jl_get_ptls_states();
+    jl_value_t *newv = newstruct(ptls, (jl_datatype_t*)ty);
     intrinsic_2_t op = select_intrinsic_2(sz2, (const intrinsic_2_t*)voidlist);
     op(sz * host_char_bit, pa, pb, jl_data_ptr(newv));
     if (ty == (jl_value_t*)jl_bool_type)
@@ -534,7 +539,8 @@ static inline jl_value_t *jl_intrinsiclambda_cmp(jl_value_t *ty, void *pa, void 
 
 static inline jl_value_t *jl_intrinsiclambda_checked(jl_value_t *ty, void *pa, void *pb, unsigned sz, unsigned sz2, const void *voidlist)
 {
-    jl_value_t *newv = newstruct((jl_datatype_t*)ty);
+    jl_ptls_t ptls = jl_get_ptls_states();
+    jl_value_t *newv = newstruct(ptls, (jl_datatype_t*)ty);
     intrinsic_checked_t op = select_intrinsic_checked(sz2, (const intrinsic_checked_t*)voidlist);
     int ovflw = op(sz * host_char_bit, pa, pb, jl_data_ptr(newv));
     if (ovflw)
@@ -551,12 +557,13 @@ static inline jl_value_t *jl_intrinsiclambda_checked(jl_value_t *ty, void *pa, v
     bi_intrinsic_ctype(OP, name, 64, double) \
 JL_DLLEXPORT jl_value_t *jl_##name(jl_value_t *a, jl_value_t *b) \
 { \
+    jl_ptls_t ptls = jl_get_ptls_states();\
     jl_value_t *ty = jl_typeof(a); \
     if (jl_typeof(b) != ty) \
         jl_error(#name ": types of a and b must match"); \
     if (!jl_is_bitstype(ty)) \
         jl_error(#name ": values are not bitstypes"); \
-    jl_value_t *newv = newstruct((jl_datatype_t*)ty); \
+    jl_value_t *newv = newstruct(ptls, (jl_datatype_t*)ty);              \
     void *pa = jl_data_ptr(a), *pb = jl_data_ptr(b), *pr = jl_data_ptr(newv); \
     int sz = jl_datatype_size(ty); \
     switch (sz) { \
@@ -605,12 +612,13 @@ JL_DLLEXPORT jl_value_t *jl_##name(jl_value_t *a, jl_value_t *b) \
     ter_intrinsic_ctype(OP, name, 64, double) \
 JL_DLLEXPORT jl_value_t *jl_##name(jl_value_t *a, jl_value_t *b, jl_value_t *c) \
 { \
+    jl_ptls_t ptls = jl_get_ptls_states();\
     jl_value_t *ty = jl_typeof(a); \
     if (jl_typeof(b) != ty || jl_typeof(c) != ty) \
         jl_error(#name ": types of a, b, and c must match"); \
     if (!jl_is_bitstype(ty)) \
         jl_error(#name ": values are not bitstypes"); \
-    jl_value_t *newv = newstruct((jl_datatype_t*)ty); \
+    jl_value_t *newv = newstruct(ptls, (jl_datatype_t*)ty);              \
     void *pa = jl_data_ptr(a), *pb = jl_data_ptr(b), *pc = jl_data_ptr(c), *pr = jl_data_ptr(newv); \
     int sz = jl_datatype_size(ty); \
     switch (sz) { \
@@ -892,12 +900,13 @@ un_fintrinsic(sqrt_float,sqrt_llvm)
 
 JL_DLLEXPORT jl_value_t *jl_powi_llvm(jl_value_t *a, jl_value_t *b)
 {
+    jl_ptls_t ptls = jl_get_ptls_states();
     jl_value_t *ty = jl_typeof(a);
     if (!jl_is_bitstype(ty))
         jl_error("powi_llvm: a is not a bitstype");
     if (!jl_is_bitstype(jl_typeof(b)) || jl_datatype_size(jl_typeof(b)) != 4)
         jl_error("powi_llvm: b is not a 32-bit bitstype");
-    jl_value_t *newv = newstruct((jl_datatype_t*)ty);
+    jl_value_t *newv = newstruct(ptls, (jl_datatype_t*)ty);
     void *pa = jl_data_ptr(a), *pr = jl_data_ptr(newv);
     int sz = jl_datatype_size(ty);
     switch (sz) {
