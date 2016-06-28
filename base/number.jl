@@ -72,7 +72,7 @@ end
 function promote_op{R<:Number,S<:Number}(op, ::Type{R}, ::Type{S})
     T = typeof(op(one(R), one(S)))
     # preserve the most general (abstract) type when possible
-    return isleaftype(R) & isleaftype(S) ? T : typejoin(R, S, T)
+    return isleaftype(R) && isleaftype(S) ? T : typejoin(R, S, T)
 end
 
 factorial(x::Number) = gamma(x + 1) # fallback for x not Integer
