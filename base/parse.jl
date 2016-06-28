@@ -195,4 +195,4 @@ function parse(str::AbstractString; raise::Bool=true)
     return ex
 end
 
-promote_op{Op<:typeof(parse),T}(::Op, ::Type{T}, ::Any) = T
+promote_op{T}(::typeof(parse), ::Type{T}, ::Any) = T

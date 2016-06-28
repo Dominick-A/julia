@@ -225,7 +225,7 @@ promote_op(::Any)    = (@_pure_meta; Bottom)
 promote_op(::Any, ::Any) = (@_pure_meta; Any)
 promote_op(::Any, ::Any, ::Any) = (@_pure_meta; Any)
 promote_op{T}(::Type{T}, ::Any) = (@_pure_meta; T)
-promote_op{Op<:typeof(convert),T}(::Op, ::Type{T}, ::Any) = (@_pure_meta, T)
+promote_op{T}(::typeof(convert), ::Type{T}, ::Any) = (@_pure_meta, T)
 promote_op(op, T, S, U, V...) = (@_pure_meta; promote_op(op, T, promote_op(op, S, U, V...)))
 
 ## catch-alls to prevent infinite recursion when definitions are missing ##

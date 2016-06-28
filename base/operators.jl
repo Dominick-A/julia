@@ -43,10 +43,6 @@ end
 ==(T::TypeVar, S::Type) = false
 ==(T::Type, S::TypeVar) = false
 
-for op in (<, >, <=, >=, (==))
-    @eval promote_op{Op<:$(typeof(op))}(::Op, ::Any, ::Any) = ($(Expr(:meta, :pure)); Bool)
-end
-
 ## comparison fallbacks ##
 
 !=(x,y) = !(x==y)
@@ -64,6 +60,10 @@ const ≥ = >=
 .>(x,y) = y .< x
 .>=(x,y) = y .<= x
 const .≥ = .>=
+
+for op in (<, >, <=, >=, (==))
+    @eval promote_op(::$(typeof(op)), ::Any, ::Any) = ($(Expr(:meta, :pure)); Bool)
+end
 
 # this definition allows Number types to implement < instead of isless,
 # which is more idiomatic:

@@ -196,10 +196,10 @@ promote_rule(::Type{Float32}, ::Type{Float16}) = Float32
 promote_rule(::Type{Float64}, ::Type{Float16}) = Float64
 promote_rule(::Type{Float64}, ::Type{Float32}) = Float64
 
-promote_op{Op<:typeof(trunc),T<:Union{Float32,Float64}}(::Op, ::Type{Signed}, ::Type{T}) = Int
-promote_op{Op<:typeof(trunc),T<:Union{Float32,Float64}}(::Op, ::Type{Unsigned}, ::Type{T}) = UInt
+promote_op{T<:Union{Float32,Float64}}(::typeof(trunc), ::Type{Signed}, ::Type{T}) = Int
+promote_op{T<:Union{Float32,Float64}}(::typeof(trunc), ::Type{Unsigned}, ::Type{T}) = UInt
 for f in (ceil, floor, round, trunc)
-    @eval promote_op{Op<:$(typeof(f)),T}(::Op, ::Type{T}, ::Any) = T
+    @eval promote_op{T}(::typeof($f), ::Type{T}, ::Any) = T
 end
 
 widen(::Type{Float16}) = Float32
