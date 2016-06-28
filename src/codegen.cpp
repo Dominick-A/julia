@@ -630,6 +630,9 @@ static inline jl_cgval_t mark_julia_slot(Value *v, jl_value_t *typ, MDNode *tbaa
 
 static inline jl_cgval_t mark_julia_type(Value *v, bool isboxed, jl_value_t *typ, jl_codectx_t *ctx, bool needsroot = true)
 {
+    // FIXME: mark_julia_type is often called for constant values, in which case
+    //        mark_julia_const should be used (as part of the jl_cgval_t refactor)
+    //assert((!v||!isa<llvm::Constant>(v)) && "marking constant, use mark_julia_const instead");
     Type *T = julia_type_to_llvm(typ);
     if (type_is_ghost(T)) {
         return ghostValue(typ);
@@ -2076,7 +2079,7 @@ static bool emit_builtin_call(jl_cgval_t *ret, jl_value_t *f, jl_value_t **args,
         if (rt1) {
             rt2 = static_eval(args[2], ctx, true);
             if (rt2) {
-                *ret = mark_julia_type(ConstantInt::get(T_int1, jl_egal(rt1, rt2)), false, jl_bool_type, ctx);
+                *ret = mark_julia_const(jl_box_bool(jl_egal(rt1, rt2)));
                 JL_GC_POP();
                 return true;
             }
@@ -2093,7 +2096,12 @@ static bool emit_builtin_call(jl_cgval_t *ret, jl_value_t *f, jl_value_t **args,
         Value *ans = emit_f_is(v1, v2, ctx);
         mark_gc_use(v1);
         mark_gc_use(v2);
-        *ret = mark_julia_type(ans, false, jl_bool_type, ctx);
+        if (ConstantInt *c = dyn_cast<ConstantInt>(ans)) {
+            // TODO: emit_f_is should return jl_cgval_t, as it often returns constant values
+            *ret = mark_julia_const(jl_box_bool(c->getSExtValue()));
+        } else {
+            *ret = mark_julia_type(ans, false, jl_bool_type, ctx);
+        }
         JL_GC_POP();
         return true;
     }
@@ -2156,14 +2164,14 @@ static bool emit_builtin_call(jl_cgval_t *ret, jl_value_t *f, jl_value_t **args,
             jl_value_t *tp0 = jl_tparam0(ty);
             if (jl_subtype(arg, tp0, 0)) {
                 emit_expr(args[1], ctx);  // TODO remove if no side effects
-                *ret = mark_julia_type(ConstantInt::get(T_int1, 1), false, jl_bool_type, ctx);
+                *ret = mark_julia_const(jl_box_bool(1));
                 JL_GC_POP();
                 return true;
             }
             if (!jl_subtype(tp0, (jl_value_t*)jl_type_type, 0)) {
                 if (jl_is_leaf_type(arg)) {
                     emit_expr(args[1], ctx);  // TODO remove if no side effects
-                    *ret = mark_julia_type(ConstantInt::get(T_int1, 0), false, jl_bool_type, ctx);
+                    *ret = mark_julia_const(jl_box_bool(0));
                     JL_GC_POP();
                     return true;
                 }
@@ -2188,7 +2196,7 @@ static bool emit_builtin_call(jl_cgval_t *ret, jl_value_t *f, jl_value_t **args,
             jl_is_type_type(rt2) && !jl_is_typevar(jl_tparam0(rt2))) {
             int issub = jl_subtype(jl_tparam0(rt1), jl_tparam0(rt2), 0);
             // TODO: emit args[1] and args[2] in case of side effects?
-            *ret = mark_julia_type(ConstantInt::get(T_int1, issub), false, jl_bool_type, ctx);
+            *ret = mark_julia_const(jl_box_bool(issub));
             JL_GC_POP();
             return true;
         }
@@ -2258,7 +2266,7 @@ static bool emit_builtin_call(jl_cgval_t *ret, jl_value_t *f, jl_value_t **args,
                         return true;
                     }
                     else if (idx > ndims) {
-                        *ret = mark_julia_type(ConstantInt::get(T_size, 1), false, jl_long_type, ctx);
+                        *ret = mark_julia_const(jl_box_long(1));
                         JL_GC_POP();
                         return true;
                     }
@@ -2496,7 +2504,7 @@ static bool emit_builtin_call(jl_cgval_t *ret, jl_value_t *f, jl_value_t **args,
             if (jl_is_leaf_type(tp0)) {
                 emit_expr(args[1], ctx);
                 assert(jl_is_datatype(tp0));
-                *ret = mark_julia_type(ConstantInt::get(T_size, jl_datatype_nfields(tp0)), false, jl_long_type, ctx);
+                *ret = mark_julia_const(jl_box_long(jl_datatype_nfields(tp0)));
                 JL_GC_POP();
                 return true;
             }
@@ -2554,7 +2562,7 @@ static bool emit_builtin_call(jl_cgval_t *ret, jl_value_t *f, jl_value_t **args,
             sty != jl_datatype_type) {
             if (jl_is_leaf_type((jl_value_t*)sty) ||
                 (sty->name->names == jl_emptysvec && sty->size > 0)) {
-                *ret = mark_julia_type(ConstantInt::get(T_size, sty->size), false, jl_long_type, ctx);
+                *ret = mark_julia_const(jl_box_long(sty->size));
                 JL_GC_POP();
                 return true;
             }
