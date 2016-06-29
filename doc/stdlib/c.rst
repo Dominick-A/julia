@@ -60,19 +60,19 @@
 
    Neither ``convert`` nor ``cconvert`` should take a Julia object and turn it into a ``Ptr``\ .
 
-.. function:: unsafe_load(p::Ptr{T},i::Integer)
+.. function:: unsafe_load(p::Ptr{T}, [i::Integer=1], [align::Integer=1])
 
    .. Docstring generated from Julia source
 
-   Load a value of type ``T`` from the address of the ith element (1-indexed) starting at ``p``\ . This is equivalent to the C expression ``p[i-1]``\ .
+   Load a value of type ``T`` from the address of the ith element (1-indexed) starting at ``p``\ . This is equivalent to the C expression ``p[i-1]``\ . The align argument specifies the alignment of the load, in bytes.
 
    The ``unsafe`` prefix on this function indicates that no validation is performed on the pointer ``p`` to ensure that it is valid. Incorrect usage may segfault your program or return garbage answers, in the same manner as C.
 
-.. function:: unsafe_store!(p::Ptr{T},x,i::Integer)
+.. function:: unsafe_store!(p::Ptr{T}, x, [i::Integer=1], [align::Integer=1])
 
    .. Docstring generated from Julia source
 
-   Store a value of type ``T`` to the address of the ith element (1-indexed) starting at ``p``\ . This is equivalent to the C expression ``p[i-1] = x``\ .
+   Store a value of type ``T`` to the address of the ith element (1-indexed) starting at ``p``\ . This is equivalent to the C expression ``p[i-1] = x``\ . The align argument specifies the alignment of the store, in bytes.
 
    The ``unsafe`` prefix on this function indicates that no validation is performed on the pointer ``p`` to ensure that it is valid. Incorrect usage may corrupt or segfault your program, in the same manner as C.
 

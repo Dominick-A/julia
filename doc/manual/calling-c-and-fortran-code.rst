@@ -1025,9 +1025,10 @@ The following methods are described as "unsafe" because a bad pointer
 or type declaration can cause Julia to terminate abruptly.
 
 Given a ``Ptr{T}``, the contents of type ``T`` can generally be copied from
-the referenced memory into a Julia object using ``unsafe_load(ptr, [index])``.
-The index argument is optional (default is 1),
-and follows the Julia-convention of 1-based indexing.
+the referenced memory into a Julia object using ``unsafe_load(ptr, [index], [align])``.
+The index argument is optional (default is 1), and follows the Julia-convention of 1-based
+indexing. The align argument indicates the alignment of the load in bytes, and is optional
+as well (defaulting to a safe 1 byte alignment).
 This function is intentionally similar to the behavior of :func:`getindex` and :func:`setindex!`
 (e.g. ``[]`` access syntax).
 
@@ -1049,8 +1050,8 @@ reference by :func:`unsafe_pointer_to_objref(ptr) <unsafe_pointer_to_objref>`.
 <pointer_from_objref>`.)
 
 The reverse operation (writing data to a ``Ptr{T}``), can be performed using
-:func:`unsafe_store!(ptr, value, [index]) <unsafe_store!>`.  Currently, this is only supported
-for bitstypes or other pointer-free (``isbits``) immutable types.
+:func:`unsafe_store!(ptr, value, [index], [align]) <unsafe_store!>`.  Currently, this is only
+supported for bitstypes or other pointer-free (``isbits``) immutable types.
 
 Any operation that throws an error is probably currently unimplemented
 and should be posted as a bug so that it can be resolved.
