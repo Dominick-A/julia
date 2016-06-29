@@ -194,5 +194,3 @@ function parse(str::AbstractString; raise::Bool=true)
     end
     return ex
 end
-
-promote_op{T}(::typeof(parse), ::Type{T}, ::Any) = T
