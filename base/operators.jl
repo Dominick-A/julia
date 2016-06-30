@@ -61,13 +61,6 @@ const ≥ = >=
 .>=(x,y) = y .<= x
 const .≥ = .>=
 
-for op in (<, >, <=, >=, (==))
-    # to fix ambiguities
-    @eval promote_op{R<:Number,S<:Number}(::$(typeof(op)), ::Type{R}, ::Type{S}) =
-        ($(Expr(:meta, :pure)); Bool)
-    @eval promote_op{Op<:$(typeof(op))}(::Op, ::Any, ::Any) = ($(Expr(:meta, :pure)); Bool)
-end
-
 # this definition allows Number types to implement < instead of isless,
 # which is more idiomatic:
 isless(x::Real, y::Real) = x<y
